@@ -156,6 +156,128 @@ class SemanticScholarFetcher:
 
         return total_results, fetched_count, citations
 
+    def search_papers_with_split(
+        self,
+        query: str,
+        year: str,
+        fields: List[str],
+        base_filename: str,
+        max_size_mb: int = 100
+    ) -> tuple[int, int, List[int], List[str]]:
+        """
+        論文を検索してJSONL形式で逐次保存（ファイルサイズ制限付き）
+
+        Args:
+            query: 検索クエリ
+            year: 年フィルタ（例: "2025"）
+            fields: 取得するフィールドのリスト
+            base_filename: 出力ファイル名のベース（拡張子なし）
+            max_size_mb: 1ファイルの最大サイズ（MB）
+
+        Returns:
+            (総検索結果数, 取得件数, 引用数リスト, 出力ファイルリスト)
+        """
+        params = {
+            "query": query,
+            "year": year,
+            "fields": ",".join(fields)
+        }
+
+        total_results = 0
+        fetched_count = 0
+        citations = []
+        output_files = []
+        token = None
+        page = 1
+
+        # 現在のファイル情報
+        current_file_index = 1
+        current_file = None
+        current_file_size = 0
+        max_size_bytes = max_size_mb * 1024 * 1024
+
+        print(f"検索中: '{query}' (年: {year})")
+        print(f"取得フィールド: {', '.join(fields)}")
+        print(f"ファイル分割サイズ: {max_size_mb} MB")
+        print("-" * 80)
+
+        try:
+            # 最初のファイルを開く
+            if current_file_index == 1:
+                filename = f"{base_filename}.jsonl"
+            else:
+                filename = f"{base_filename}_part{current_file_index}.jsonl"
+
+            current_file = open(filename, "w", encoding="utf-8")
+            output_files.append(filename)
+            print(f"ファイル作成: {filename}")
+
+            while True:
+                # トークンがある場合はパラメータに追加
+                if token:
+                    params["token"] = token
+
+                print(f"ページ {page} を取得中...", end=" ", flush=True)
+
+                result = self._make_request(params)
+                if not result:
+                    break
+
+                # 初回のみ総件数を取得
+                if page == 1:
+                    total_results = result.get("total", 0)
+                    print(f"\n総検索結果数: {total_results:,} 件")
+                    print("-" * 80)
+
+                # データを逐次書き込み
+                papers = result.get("data", [])
+                for paper in papers:
+                    # JSON行を作成
+                    json_line = json.dumps(paper, ensure_ascii=False) + "\n"
+                    line_size = len(json_line.encode('utf-8'))
+
+                    # ファイルサイズをチェック
+                    if current_file_size + line_size > max_size_bytes and fetched_count > 0:
+                        # 現在のファイルを閉じる
+                        current_file.close()
+                        file_size_mb = current_file_size / (1024 * 1024)
+                        print(f"\nファイル完成: {output_files[-1]} ({file_size_mb:.1f} MB)")
+
+                        # 新しいファイルを開く
+                        current_file_index += 1
+                        filename = f"{base_filename}_part{current_file_index}.jsonl"
+                        current_file = open(filename, "w", encoding="utf-8")
+                        output_files.append(filename)
+                        current_file_size = 0
+                        print(f"ファイル作成: {filename}")
+
+                    # 書き込み
+                    current_file.write(json_line)
+                    current_file_size += line_size
+                    fetched_count += 1
+
+                    # 引用数の統計用
+                    if paper.get("citationCount") is not None:
+                        citations.append(paper["citationCount"])
+
+                print(f"{len(papers)} 件取得（累計: {fetched_count:,} 件）")
+
+                # 次のページのトークンを取得
+                token = result.get("token")
+                if not token:
+                    print("\nすべてのページを取得しました。")
+                    break
+
+                page += 1
+
+        finally:
+            # 最後のファイルを閉じる
+            if current_file:
+                current_file.close()
+                file_size_mb = current_file_size / (1024 * 1024)
+                print(f"ファイル完成: {output_files[-1]} ({file_size_mb:.1f} MB)")
+
+        return total_results, fetched_count, citations, output_files
 
 
 def main():
@@ -171,7 +293,7 @@ def main():
             return
 
     # 検索パラメータ
-    query = '("large language model" | "large language models")'
+    query = '"large language model"'
     year = "2025"
     fields = [
         "paperId",
@@ -186,23 +308,29 @@ def main():
         "publicationTypes"
     ]
 
-    # 出力ファイル名
+    # 出力ファイル名のベース
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"semantic_scholar_llm_2025_{timestamp}.jsonl"
+    base_filename = f"semantic_scholar_llm_2025_{timestamp}"
 
     # フェッチャーを初期化
     fetcher = SemanticScholarFetcher(api_key)
 
     try:
-        # ファイルを開いて論文を検索・逐次書き込み
-        with open(output_file, "w", encoding="utf-8") as f:
-            total, fetched_count, citations = fetcher.search_papers_streaming(
-                query, year, fields, f
-            )
+        # 論文を検索・分割保存（100MB制限）
+        total, fetched_count, citations, output_files = fetcher.search_papers_with_split(
+            query, year, fields, base_filename, max_size_mb=100
+        )
 
         # 統計情報を表示
         if fetched_count > 0:
-            print(f"\n{fetched_count:,} 件の論文を {output_file} に保存しました。")
+            print(f"\n{fetched_count:,} 件の論文を保存しました。")
+            if len(output_files) > 1:
+                print(f"ファイルは {len(output_files)} 個に分割されました:")
+                for i, file in enumerate(output_files, 1):
+                    file_size = os.path.getsize(file) / (1024 * 1024)
+                    print(f"  {i}. {file} ({file_size:.1f} MB)")
+            else:
+                print(f"ファイル: {output_files[0]}")
 
             print("\n" + "=" * 80)
             print("統計情報")
@@ -216,12 +344,47 @@ def main():
                 print(f"  - 最大: {max(citations):,} 回")
                 print(f"  - 最小: {min(citations):,} 回")
                 print(f"  - 平均: {sum(citations) / len(citations):.1f} 回")
+
+            # manifest.jsonを更新
+            update_manifest("llm", output_files[0], timestamp)
+            print(f"\nmanifest.json を更新しました。")
         else:
             print("\n論文が見つかりませんでした。")
 
     except Exception as e:
         print(f"\nエラーが発生しました: {e}")
         raise
+
+
+def update_manifest(dataset_type: str, base_filename: str, timestamp: str):
+    """
+    manifest.jsonを更新して最新のファイル情報を記録
+
+    Args:
+        dataset_type: データセットタイプ（'llm' or 'vlm'）
+        base_filename: ベースファイル名（最初のファイル名）
+        timestamp: タイムスタンプ
+    """
+    manifest_file = "manifest.json"
+
+    # 既存のmanifestを読み込む
+    if os.path.exists(manifest_file):
+        with open(manifest_file, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    else:
+        manifest = {}
+
+    # 最新情報を更新
+    manifest[dataset_type] = {
+        "filename": base_filename,
+        "timestamp": timestamp,
+        "updated_at": datetime.now().isoformat()
+    }
+
+    # manifestを保存
+    with open(manifest_file, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, ensure_ascii=False, indent=2)
+        f.write("\n")
 
 
 if __name__ == "__main__":

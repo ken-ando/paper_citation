@@ -241,6 +241,12 @@
             text-transform: uppercase;
         }
 
+        .metric-secondary {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
         .paper-details {
             padding: 20px;
             background: white;
@@ -632,26 +638,99 @@
             });
         }
 
-        // Load data
+        // Load data (supports split files)
         async function loadData() {
-            const files = {
+            // Try to load manifest.json to get the latest filenames
+            let files = {
                 llm: 'semantic_scholar_llm_2025_20251219_033141.jsonl',
                 vlm: 'semantic_scholar_vlm_2025_20251219_023659.jsonl'
             };
+
+            try {
+                const manifestResponse = await fetch('manifest.json');
+                if (manifestResponse.ok) {
+                    const manifest = await manifestResponse.json();
+                    console.log('Loaded manifest:', manifest);
+
+                    if (manifest.llm && manifest.llm.filename) {
+                        files.llm = manifest.llm.filename;
+                        console.log(`Using LLM file from manifest: ${files.llm}`);
+                    }
+                    if (manifest.vlm && manifest.vlm.filename) {
+                        files.vlm = manifest.vlm.filename;
+                        console.log(`Using VLM file from manifest: ${files.vlm}`);
+                    }
+                } else {
+                    console.log('manifest.json not found, using default filenames');
+                }
+            } catch (error) {
+                console.log('Failed to load manifest.json, using default filenames:', error);
+            }
 
             for (const [dataset, filename] of Object.entries(files)) {
                 if (dataManager.loaded[dataset]) continue;
 
                 try {
-                    const response = await fetch(filename);
-                    if (!response.ok) throw new Error(`Failed to load ${filename}`);
+                    const allPapers = [];
+                    const baseFilename = filename.replace('.jsonl', '');
 
-                    const text = await response.text();
-                    const lines = text.trim().split('\n');
-                    dataManager[dataset] = lines.map(line => JSON.parse(line));
+                    // Try to load the main file first
+                    let response = await fetch(filename);
+
+                    if (response.ok) {
+                        // Main file exists - load it
+                        const text = await response.text();
+                        const lines = text.trim().split('\n').filter(line => line);
+                        allPapers.push(...lines.map(line => JSON.parse(line)));
+                        console.log(`Loaded ${filename}: ${lines.length} papers`);
+
+                        // Try to load additional split files (_part2, _part3, ...)
+                        let partIndex = 2;
+                        while (true) {
+                            const partFilename = `${baseFilename}_part${partIndex}.jsonl`;
+                            const partResponse = await fetch(partFilename);
+
+                            if (!partResponse.ok) {
+                                break; // No more parts
+                            }
+
+                            const text = await partResponse.text();
+                            const lines = text.trim().split('\n').filter(line => line);
+                            allPapers.push(...lines.map(line => JSON.parse(line)));
+                            console.log(`Loaded ${partFilename}: ${lines.length} papers`);
+
+                            partIndex++;
+                        }
+                    } else {
+                        // Main file doesn't exist - try split files starting from _part1
+                        console.log(`${filename} not found, trying split files...`);
+                        let partIndex = 1;
+
+                        while (true) {
+                            const partFilename = `${baseFilename}_part${partIndex}.jsonl`;
+                            const partResponse = await fetch(partFilename);
+
+                            if (!partResponse.ok) {
+                                if (partIndex === 1) {
+                                    throw new Error(`Failed to load ${filename} or split files`);
+                                }
+                                break; // No more parts
+                            }
+
+                            const text = await partResponse.text();
+                            const lines = text.trim().split('\n').filter(line => line);
+                            allPapers.push(...lines.map(line => JSON.parse(line)));
+                            console.log(`Loaded ${partFilename}: ${lines.length} papers`);
+
+                            partIndex++;
+                        }
+                    }
+
+                    dataManager[dataset] = allPapers;
                     dataManager.loaded[dataset] = true;
+                    console.log(`Total papers loaded for ${dataset}: ${allPapers.length}`);
 
-                    // Load data後、表示を更新
+                    // Update display after loading data
                     renderAllViews(dataset);
                 } catch (error) {
                     console.error(`Error loading ${filename}:`, error);
@@ -763,6 +842,14 @@
             const venue = paper.venue || 'Unknown';
             const publicationDate = paper.publicationDate || 'N/A';
 
+            // For velocity view, also show citation count
+            const metricDisplay = metricKey === 'velocity'
+                ? `<div class="metric-value">${metricValue}</div>
+                   <div class="metric-label">${metricLabel}</div>
+                   <div class="metric-secondary">${paper.citationCount || 0} citations</div>`
+                : `<div class="metric-value">${metricValue}</div>
+                   <div class="metric-label">${metricLabel}</div>`;
+
             return `
                 <li class="paper-item">
                     <div class="paper-header">
@@ -774,8 +861,7 @@
                             </div>
                         </div>
                         <div class="paper-metric">
-                            <div class="metric-value">${metricValue}</div>
-                            <div class="metric-label">${metricLabel}</div>
+                            ${metricDisplay}
                         </div>
                         <span class="expand-icon">▼</span>
                     </div>
