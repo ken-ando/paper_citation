@@ -1,0 +1,12 @@
+{
+  "llm": {
+    "filename": "semantic_scholar_llm_2025_20251219_034950.jsonl",
+    "timestamp": "20251219_034950",
+    "updated_at": "2025-12-19T03:51:23.475357"
+  },
+  "vlm": {
+    "filename": "semantic_scholar_vlm_2025_20251219_023659.jsonl",
+    "timestamp": "20251219_023659",
+    "updated_at": "2025-12-19T02:36:59.000000"
+  }
+}
