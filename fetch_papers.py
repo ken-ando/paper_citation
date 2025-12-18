@@ -162,7 +162,7 @@ class SemanticScholarFetcher:
         year: str,
         fields: List[str],
         base_filename: str,
-        max_size_mb: int = 100
+        max_size_mb: int = 40
     ) -> tuple[int, int, List[int], List[str]]:
         """
         論文を検索してJSONL形式で逐次保存（ファイルサイズ制限付き）
@@ -318,7 +318,7 @@ def main():
     try:
         # 論文を検索・分割保存（100MB制限）
         total, fetched_count, citations, output_files = fetcher.search_papers_with_split(
-            query, year, fields, base_filename, max_size_mb=100
+            query, year, fields, base_filename, max_size_mb=40
         )
 
         # 統計情報を表示
