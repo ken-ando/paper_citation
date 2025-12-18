@@ -4,6 +4,7 @@ Semantic Scholar API を使用して2025年に発表された
 """
 
 import os
+import sys
 import time
 import json
 import requests
@@ -282,6 +283,20 @@ class SemanticScholarFetcher:
 
 def main():
     """メイン処理"""
+    # コマンドライン引数でデータセットタイプを指定
+    dataset_type = "llm"  # デフォルトはLLM
+    if len(sys.argv) > 1:
+        arg = sys.argv[1].lower()
+        if arg in ["vlm", "vision"]:
+            dataset_type = "vlm"
+        elif arg in ["llm", "language"]:
+            dataset_type = "llm"
+        else:
+            print(f"使用方法: python {sys.argv[0]} [llm|vlm]")
+            print("  llm  - Large Language Model データを取得（デフォルト）")
+            print("  vlm  - Vision Language Model データを取得")
+            return
+
     # APIキーの確認
     api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
     if not api_key:
@@ -292,8 +307,14 @@ def main():
             print("中止しました。")
             return
 
-    # 検索パラメータ
-    query = '"large language model"'
+    # データセットタイプに応じた検索パラメータ
+    if dataset_type == "llm":
+        query = '"large language model"'
+        dataset_name = "LLM (Large Language Model)"
+    else:  # vlm
+        query = '"vision language" | "vision and language"'
+        dataset_name = "VLM (Vision Language Model)"
+
     year = "2025"
     fields = [
         "paperId",
@@ -310,7 +331,12 @@ def main():
 
     # 出力ファイル名のベース
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_filename = f"semantic_scholar_llm_2025_{timestamp}"
+    base_filename = f"semantic_scholar_{dataset_type}_2025_{timestamp}"
+
+    print(f"\n{'=' * 80}")
+    print(f"データセット: {dataset_name}")
+    print(f"検索クエリ: {query}")
+    print(f"{'=' * 80}\n")
 
     # フェッチャーを初期化
     fetcher = SemanticScholarFetcher(api_key)
@@ -318,7 +344,7 @@ def main():
     try:
         # 論文を検索・分割保存（100MB制限）
         total, fetched_count, citations, output_files = fetcher.search_papers_with_split(
-            query, year, fields, base_filename, max_size_mb=40
+            query, year, fields, base_filename, max_size_mb=100
         )
 
         # 統計情報を表示
@@ -346,7 +372,7 @@ def main():
                 print(f"  - 平均: {sum(citations) / len(citations):.1f} 回")
 
             # manifest.jsonを更新
-            update_manifest("llm", output_files[0], timestamp)
+            update_manifest(dataset_type, output_files[0], timestamp)
             print(f"\nmanifest.json を更新しました。")
         else:
             print("\n論文が見つかりませんでした。")
