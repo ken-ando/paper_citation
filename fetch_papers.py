@@ -171,7 +171,7 @@ def main():
             return
 
     # 検索パラメータ
-    query = '"vision and language"'
+    query = '("large language model" | "large language models")'
     year = "2025"
     fields = [
         "paperId",
@@ -188,7 +188,7 @@ def main():
 
     # 出力ファイル名
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = f"semantic_scholar_vlm_2025_{timestamp}.jsonl"
+    output_file = f"semantic_scholar_llm_2025_{timestamp}.jsonl"
 
     # フェッチャーを初期化
     fetcher = SemanticScholarFetcher(api_key)
