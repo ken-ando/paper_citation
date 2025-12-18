@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Scholar Papers - 2025</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Dataset tabs */
+        .dataset-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .dataset-tab {
+            padding: 12px 24px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .dataset-tab:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .dataset-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* View tabs */
+        .view-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .view-tab {
+            padding: 10px 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .view-tab:hover {
+            background: #f0f0f0;
+        }
+
+        .view-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Content area */
+        .content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .dataset-content {
+            display: none;
+        }
+
+        .dataset-content.active {
+            display: block;
+        }
+
+        .view-content {
+            display: none;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        /* Paper list */
+        .paper-list {
+            list-style: none;
+        }
+
+        .paper-item {
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .paper-item:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .paper-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            background: #fafafa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .paper-header:hover {
+            background: #f0f0f0;
+        }
+
+        .paper-rank {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1rem;
+            min-width: 50px;
+        }
+
+        .paper-title-area {
+            flex: 1;
+            margin: 0 20px;
+        }
+
+        .paper-title {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .paper-meta {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .paper-metric {
+            text-align: right;
+            min-width: 120px;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #764ba2;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .paper-details {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: none;
+        }
+
+        .paper-details.expanded {
+            display: block;
+        }
+
+        .detail-section {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .detail-content {
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .authors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .author {
+            background: #f0f0f0;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .paper-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .paper-link:hover {
+            background: #764ba2;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 1.2rem;
+            color: #999;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error display */
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        /* Statistics */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .expand-icon {
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        @media (max-width: 768px) {
+            .paper-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .paper-title-area {
+                margin: 0;
+            }
+
+            .paper-metric {
+                text-align: left;
+                min-width: auto;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Semantic Scholar Papers - 2025</h1>
+            <p class="subtitle">Large Language Models & Vision Language Models Analysis</p>
+        </header>
+
+        <!-- Dataset Selection Tabs -->
+        <div class="dataset-tabs">
+            <button class="dataset-tab active" data-dataset="llm">Large Language Model (LLM)</button>
+            <button class="dataset-tab" data-dataset="vlm">Vision Language Model (VLM)</button>
+        </div>
+
+        <!-- LLM Dataset -->
+        <div class="dataset-content active" data-dataset="llm">
+            <div class="view-tabs">
+                <button class="view-tab active" data-view="top100">🏆 Top 100 Citations (2025)</button>
+                <button class="view-tab" data-view="recent30">🔥 Top 50 Recent (Last 30 Days)</button>
+                <button class="view-tab" data-view="velocity">📈 Top 100 Citation Velocity</button>
+            </div>
+
+            <div class="content">
+                <div class="view-content active" data-view="top100">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading data...</p>
+                    </div>
+                </div>
+                <div class="view-content" data-view="recent30">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading data...</p>
+                    </div>
+                </div>
+                <div class="view-content" data-view="velocity">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VLM Dataset -->
+        <div class="dataset-content" data-dataset="vlm">
+            <div class="view-tabs">
+                <button class="view-tab active" data-view="top100">🏆 Top 100 Citations (2025)</button>
+                <button class="view-tab" data-view="recent30">🔥 Top 50 Recent (Last 30 Days)</button>
+                <button class="view-tab" data-view="velocity">📈 Top 100 Citation Velocity</button>
+            </div>
+
+            <div class="content">
+                <div class="view-content active" data-view="top100">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading data...</p>
+                    </div>
+                </div>
+                <div class="view-content" data-view="recent30">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading data...</p>
+                    </div>
+                </div>
+                <div class="view-content" data-view="velocity">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data management
+        const dataManager = {
+            llm: [],
+            vlm: [],
+            loaded: {
+                llm: false,
+                vlm: false
+            }
+        };
+
+        // Current view
+        let currentDataset = 'llm';
+        let currentView = 'top100';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupTabs();
+            loadData();
+        });
+
+        // Setup tabs
+        function setupTabs() {
+            // Dataset tabs
+            document.querySelectorAll('.dataset-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const dataset = tab.dataset.dataset;
+                    switchDataset(dataset);
+                });
+            });
+
+            // View tabs (for each dataset)
+            document.querySelectorAll('.dataset-content').forEach(content => {
+                const dataset = content.dataset.dataset;
+                content.querySelectorAll('.view-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const view = tab.dataset.view;
+                        switchView(dataset, view);
+                    });
+                });
+            });
+        }
+
+        // Switch dataset
+        function switchDataset(dataset) {
+            currentDataset = dataset;
+
+            // Tab active state
+            document.querySelectorAll('.dataset-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.dataset === dataset);
+            });
+
+            // Toggle content display
+            document.querySelectorAll('.dataset-content').forEach(content => {
+                content.classList.toggle('active', content.dataset.dataset === dataset);
+            });
+
+            // Load data if not loaded yet
+            if (!dataManager.loaded[dataset]) {
+                loadData();
+            }
+        }
+
+        // Switch view
+        function switchView(dataset, view) {
+            currentView = view;
+
+            const content = document.querySelector(`.dataset-content[data-dataset="${dataset}"]`);
+
+            // Tab active state
+            content.querySelectorAll('.view-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.view === view);
+            });
+
+            // Toggle content display
+            content.querySelectorAll('.view-content').forEach(viewContent => {
+                viewContent.classList.toggle('active', viewContent.dataset.view === view);
+            });
+        }
+
+        // Load data
+        async function loadData() {
+            const files = {
+                llm: 'semantic_scholar_llm_2025_20251219_022918.jsonl',
+                vlm: 'semantic_scholar_vlm_2025_20251219_023659.jsonl'
+            };
+
+            for (const [dataset, filename] of Object.entries(files)) {
+                if (dataManager.loaded[dataset]) continue;
+
+                try {
+                    const response = await fetch(filename);
+                    if (!response.ok) throw new Error(`Failed to load ${filename}`);
+
+                    const text = await response.text();
+                    const lines = text.trim().split('\n');
+                    dataManager[dataset] = lines.map(line => JSON.parse(line));
+                    dataManager.loaded[dataset] = true;
+
+                    // Load data後、表示を更新
+                    renderAllViews(dataset);
+                } catch (error) {
+                    console.error(`Error loading ${filename}:`, error);
+                    showError(dataset, `Failed to load data: ${error.message}`);
+                }
+            }
+        }
+
+        // Render all views
+        function renderAllViews(dataset) {
+            renderTop100(dataset);
+            renderRecent30(dataset);
+            renderVelocity(dataset);
+        }
+
+        // Render Top 100
+        function renderTop100(dataset) {
+            const data = dataManager[dataset];
+            const sorted = [...data]
+                .filter(p => p.citationCount != null)
+                .sort((a, b) => b.citationCount - a.citationCount)
+                .slice(0, 100);
+
+            const container = document.querySelector(
+                `.dataset-content[data-dataset="${dataset}"] .view-content[data-view="top100"]`
+            );
+
+            renderPaperList(container, sorted, 'citationCount', 'Citations');
+        }
+
+        // Render last 30 days
+        function renderRecent30(dataset) {
+            const data = dataManager[dataset];
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+            const sorted = [...data]
+                .filter(p => {
+                    if (!p.publicationDate || p.citationCount == null) return false;
+                    const pubDate = new Date(p.publicationDate);
+                    return pubDate >= thirtyDaysAgo;
+                })
+                .sort((a, b) => b.citationCount - a.citationCount)
+                .slice(0, 50);
+
+            const container = document.querySelector(
+                `.dataset-content[data-dataset="${dataset}"] .view-content[data-view="recent30"]`
+            );
+
+            renderPaperList(container, sorted, 'citationCount', 'Citations');
+        }
+
+        // Render citation velocity
+        function renderVelocity(dataset) {
+            const data = dataManager[dataset];
+            const now = new Date();
+
+            const withVelocity = data
+                .filter(p => p.publicationDate && p.citationCount != null)
+                .map(p => {
+                    const pubDate = new Date(p.publicationDate);
+                    const daysFromPub = Math.max(1, Math.floor((now - pubDate) / (24 * 60 * 60 * 1000)));
+                    const velocity = p.citationCount / daysFromPub;
+                    return { ...p, velocity, daysFromPub };
+                })
+                .sort((a, b) => b.velocity - a.velocity)
+                .slice(0, 100);
+
+            const container = document.querySelector(
+                `.dataset-content[data-dataset="${dataset}"] .view-content[data-view="velocity"]`
+            );
+
+            renderPaperList(container, withVelocity, 'velocity', 'Citations/Day');
+        }
+
+        // Render paper list
+        function renderPaperList(container, papers, metricKey, metricLabel) {
+            if (papers.length === 0) {
+                container.innerHTML = '<p class="loading">No papers found.</p>';
+                return;
+            }
+
+            const html = `
+                <ul class="paper-list">
+                    ${papers.map((paper, index) => renderPaperItem(paper, index + 1, metricKey, metricLabel)).join('')}
+                </ul>
+            `;
+
+            container.innerHTML = html;
+
+            // Setup expand events
+            container.querySelectorAll('.paper-header').forEach((header, index) => {
+                header.addEventListener('click', () => toggleDetails(header, papers[index]));
+            });
+        }
+
+        // Render paper item
+        function renderPaperItem(paper, rank, metricKey, metricLabel) {
+            const metricValue = metricKey === 'velocity'
+                ? paper[metricKey].toFixed(2)
+                : paper[metricKey].toLocaleString();
+
+            const year = paper.year || 'N/A';
+            const venue = paper.venue || 'Unknown';
+
+            return `
+                <li class="paper-item">
+                    <div class="paper-header">
+                        <div class="paper-rank">#${rank}</div>
+                        <div class="paper-title-area">
+                            <div class="paper-title">${escapeHtml(paper.title || 'No title')}</div>
+                            <div class="paper-meta">${year} • ${escapeHtml(venue)}</div>
+                        </div>
+                        <div class="paper-metric">
+                            <div class="metric-value">${metricValue}</div>
+                            <div class="metric-label">${metricLabel}</div>
+                        </div>
+                        <span class="expand-icon">▼</span>
+                    </div>
+                    <div class="paper-details"></div>
+                </li>
+            `;
+        }
+
+        // Expand/collapse details
+        function toggleDetails(header, paper) {
+            const details = header.nextElementSibling;
+            const icon = header.querySelector('.expand-icon');
+
+            if (details.classList.contains('expanded')) {
+                details.classList.remove('expanded');
+                icon.classList.remove('expanded');
+            } else {
+                // If details not yet rendered
+                if (!details.innerHTML) {
+                    details.innerHTML = renderPaperDetails(paper);
+                }
+                details.classList.add('expanded');
+                icon.classList.add('expanded');
+            }
+        }
+
+        // Render paper details
+        function renderPaperDetails(paper) {
+            const abstract = paper.abstract || 'No abstract available.';
+            const authors = paper.authors || [];
+            const publicationDate = paper.publicationDate || 'N/A';
+            const url = paper.url || '#';
+            const paperId = paper.paperId || 'N/A';
+            const publicationTypes = paper.publicationTypes || [];
+
+            return `
+                <div class="detail-section">
+                    <div class="detail-label">Abstract</div>
+                    <div class="detail-content">${escapeHtml(abstract)}</div>
+                </div>
+                ${authors.length > 0 ? `
+                    <div class="detail-section">
+                        <div class="detail-label">Authors (${authors.length})</div>
+                        <div class="authors">
+                            ${authors.map(a => `<span class="author">${escapeHtml(a.name || 'Unknown')}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                <div class="detail-section">
+                    <div class="detail-label">Details</div>
+                    <div class="detail-content">
+                        <strong>Publication Date:</strong> ${publicationDate}<br>
+                        <strong>Paper ID:</strong> ${paperId}<br>
+                        ${publicationTypes.length > 0 ? `<strong>Type:</strong> ${publicationTypes.join(', ')}<br>` : ''}
+                        ${paper.daysFromPub ? `<strong>Days Since Publication:</strong> ${paper.daysFromPub} days<br>` : ''}
+                    </div>
+                </div>
+                <a href="${url}" target="_blank" class="paper-link">View on Semantic Scholar →</a>
+            `;
+        }
+
+        // Show error
+        function showError(dataset, message) {
+            const contents = document.querySelectorAll(
+                `.dataset-content[data-dataset="${dataset}"] .view-content`
+            );
+            contents.forEach(content => {
+                content.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+            });
+        }
+
+        // HTML escape
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
